@@ -49,7 +49,7 @@ def get_weather(province, city):
     }
     url = "http://d1.weather.com.cn/dingzhi/{}.html?_={}".format(city_id, t)
     response = get(url, headers=headers)
-    response.encoding = "utf-8"
+    response.encoding = "UBK"
     response_data = response.text.split(";")[0].split("=")[-1]
     response_json = eval(response_data)
     # print(response_json)
@@ -206,7 +206,7 @@ def send_message(to_user, access_token, region_name, weather, temp, wind_dir, no
  
 if __name__ == "__main__":
     try:
-        with open("config.txt", encoding="utf-8") as f:
+        with open("config.txt", encoding="GBK") as f:
             config = eval(f.read())
     except FileNotFoundError:
         print("推送消息失败，请检查config.txt文件是否与程序位于同一路径")
