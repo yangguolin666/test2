@@ -31,28 +31,27 @@ def get_access_token():
     # print(access_token)
     return access_token
  
-def get_weather(province, city):
-    # 城市id
-    try:
-        city_id = cityinfo.cityInfo[province][city]["AREAID"]
-    except KeyError:
-        print("推送消息失败，请检查省份或城市是否正确")
-        os.system("pause")
-        sys.exit(1)
-    # city_id = 101280101
-    # 毫秒级时间戳
-    t = (int(round(time() * 1000)))
+def get_weather(region):
     headers = {
-        "Referer": "http://www.weather.com.cn/weather1d/{}.shtml".format(city_id),
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
                       'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36'
     }
-    url = "http://d1.weather.com.cn/dingzhi/{}.html?_={}".format(city_id, t)
-    response = get(url, headers=headers)
-    response.encoding = "UBK"
-    response_data = response.text.split(";")[0].split("=")[-1]
-    response_json = eval(response_data)
-    # print(response_json)
+    key = config["weather_key"]
+    region_url = "https://geoapi.qweather.com/v2/city/lookup?location={}&key={}".format(region, key)
+    response = get(region_url, headers=headers).json()
+    if response["code"] == "404":
+        print("推送消息失败，请检查地区名是否有误！")
+        os.system("pause")
+        sys.exit(1)
+    elif response["code"] == "401":
+        print("推送消息失败，请检查和风天气key是否正确！")
+        os.system("pause")
+        sys.exit(1)
+    else:
+        # 获取地区的location--id
+        location_id = response["location"][0]["id"]
+    weather_url = "https://devapi.qweather.com/v7/weather/now?location={}&key={}".format(location_id, key)
+    response = get(weather_url, headers=headers).json()
     weatherinfo = response_json["weatherinfo"]
     # 天气
     weather = weatherinfo["weather"]
@@ -222,8 +221,8 @@ if __name__ == "__main__":
     # 接收的用户
     users = config["user"]
     # 传入地区获取天气信息
-    province, city = config["province"], config["city"]
-    weather, max_temperature, min_temperature = get_weather(province, city)
+     region = config["region"]
+    weather, temp, wind_dir = get_weather(region)
     note_ch = config["note_ch"]
     note_en = config["note_en"]
     if note_ch == "" and note_en == "":
@@ -231,5 +230,5 @@ if __name__ == "__main__":
         note_ch, note_en = get_ciba()
     # 公众号推送消息
     for user in users:
-         send_message(user, accessToken, city, weather, max_temperature, min_temperature, note_ch, note_en)
+         send_message(user, accessToken, region, weather, max_temperature, min_temperature, note_ch, note_en)
     os.system("pause")
